@@ -65,15 +65,17 @@ r = await client.get(url, headers=headers, timeout=10.0, follow_redirects=True)
 ```
 
 ### Bug 2 — Non-US coordinates returned a raw Python traceback
-The NWS API is US-only. Passing coordinates outside the US caused an unhandled
+The NWS API is US-only. Passing coordinates outside the covered region caused an unhandled
 exception that surfaced directly to the caller — a broken developer experience.
-Fixed with an explicit bounds check that returns a clean, actionable error message.
+Fixed with an explicit bounding-box check that returns a clean, actionable error message.
 
 ```python
-if not (24.0 <= latitude <= 50.0 and -125.0 <= longitude <= -66.0):
+longitude_ok = -125.0 <= longitude <= -66.0
+if not (24.0 <= latitude <= 50.0 and longitude_ok):
     return (
-        f"Error: Coordinates ({latitude}, {longitude}) are outside the United States. "
-        "The NWS API only covers US territory. "
+        f"Error: Coordinates ({latitude}, {longitude}) are outside the contiguous United States (lower 48). "
+        "This PoC uses a simple bounding box check; the NWS API is US-covered, but not all US regions "
+        "(e.g. Alaska/Hawaii) fall within these bounds. "
         "Try New York (40.7128, -74.0060) or Los Angeles (34.0522, -118.2437)."
     )
 ```

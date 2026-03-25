@@ -48,19 +48,23 @@ async def get_alerts(state: str) -> str:
 async def get_forecast(latitude: float, longitude: float) -> str:
     """
     Get a 7-day weather forecast for a US location using coordinates.
-    Only works for locations within the United States.
+    Only works for locations within the contiguous United States ("lower 48").
 
     Args:
         latitude: Latitude (must be within US, e.g. 40.7128 for New York)
-        longitude: Longitude (must be within US, e.g. -74.0060 for New York)
+        longitude: Longitude (must be within the contiguous US, e.g. -74.0060 for New York)
     """
-    if not (24.0 <= latitude <= 50.0 and -125.0 <= longitude <= -66.0):
+    # (westmost to eastmost) becomes: -125 <= longitude <= -66.
+    longitude_ok = -125.0 <= longitude <= -66.0
+    latitude_ok = 24.0 <= latitude <= 50.0
+    if not (latitude_ok and longitude_ok):
         return (
-            f"Error: Coordinates ({latitude}, {longitude}) are outside the United States. "
-            "The NWS API only covers US territory. "
+            f"Error: Coordinates ({latitude}, {longitude}) are outside the contiguous United States (lower 48). "
+            "This PoC uses a simple bounding box check; the NWS API is US-covered, but not all US regions "
+            "(e.g. Alaska/Hawaii) fall within these bounds. "
             "Try New York (40.7128, -74.0060) or Los Angeles (34.0522, -118.2437)."
         )
-    
+
     logging.info(f"Fetching forecast for ({latitude}, {longitude})")
     point_data = await fetch_nws(f"{NWS_API_BASE}/points/{latitude},{longitude}")
     forecast_url = point_data["properties"]["forecast"]
