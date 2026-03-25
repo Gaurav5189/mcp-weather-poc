@@ -16,7 +16,7 @@ async def fetch_nws(url: str) -> dict:
     """Helper to call the NWS API."""
     headers = {"User-Agent": USER_AGENT, "Accept": "application/geo+json"}
     async with httpx.AsyncClient() as client:
-        r = await client.get(url, headers=headers, timeout=10.0)
+        r = await client.get(url, headers=headers, timeout=10.0, follow_redirects=True)
         r.raise_for_status()
         return r.json()
 
@@ -47,25 +47,28 @@ async def get_alerts(state: str) -> str:
 @mcp.tool()
 async def get_forecast(latitude: float, longitude: float) -> str:
     """
-    Get a 7-day weather forecast for a location using coordinates.
+    Get a 7-day weather forecast for a US location using coordinates.
+    Only works for locations within the United States.
 
     Args:
-        latitude: Latitude of the location (e.g. 40.7128 for New York)
-        longitude: Longitude of the location (e.g. -74.0060 for New York)
+        latitude: Latitude (must be within US, e.g. 40.7128 for New York)
+        longitude: Longitude (must be within US, e.g. -74.0060 for New York)
     """
+    if not (24.0 <= latitude <= 50.0 and -125.0 <= longitude <= -66.0):
+        return (
+            f"Error: Coordinates ({latitude}, {longitude}) are outside the United States. "
+            "The NWS API only covers US territory. "
+            "Try New York (40.7128, -74.0060) or Los Angeles (34.0522, -118.2437)."
+        )
+    
     logging.info(f"Fetching forecast for ({latitude}, {longitude})")
-    # Step 1: resolve grid point
     point_data = await fetch_nws(f"{NWS_API_BASE}/points/{latitude},{longitude}")
     forecast_url = point_data["properties"]["forecast"]
-    # Step 2: fetch forecast
     forecast_data = await fetch_nws(forecast_url)
     periods = forecast_data["properties"]["periods"][:6]
-    result = []
-    for p in periods:
-        result.append(
-            f"{p['name']}: {p['detailedForecast']}"
-        )
-    return "\n\n".join(result)
+    return "\n\n".join(
+        f"{p['name']}: {p['detailedForecast']}" for p in periods
+    )
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
