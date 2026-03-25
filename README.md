@@ -71,7 +71,8 @@ Fixed with an explicit bounding-box check that returns a clean, actionable error
 
 ```python
 longitude_ok = -125.0 <= longitude <= -66.0
-if not (24.0 <= latitude <= 50.0 and longitude_ok):
+latitude_ok = 24.0 <= latitude <= 50.0
+if not (latitude_ok and longitude_ok):
     return (
         f"Error: Coordinates ({latitude}, {longitude}) are outside the contiguous United States (lower 48). "
         "This PoC uses a simple bounding box check; the NWS API is US-covered, but not all US regions "
