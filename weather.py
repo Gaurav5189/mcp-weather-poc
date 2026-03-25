@@ -4,7 +4,7 @@ import sys
 import logging
 from mcp.server.fastmcp import FastMCP
 
-# NEVER use print() — log to stderr only
+# No print() Used — log to stderr only
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 mcp = FastMCP("Weather PoC Server")
@@ -54,7 +54,6 @@ async def get_forecast(latitude: float, longitude: float) -> str:
         latitude: Latitude (must be within US, e.g. 40.7128 for New York)
         longitude: Longitude (must be within the contiguous US, e.g. -74.0060 for New York)
     """
-    # (westmost to eastmost) becomes: -125 <= longitude <= -66.
     longitude_ok = -125.0 <= longitude <= -66.0
     latitude_ok = 24.0 <= latitude <= 50.0
     if not (latitude_ok and longitude_ok):
